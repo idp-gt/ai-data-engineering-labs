@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service-broken
+  namespace: workers
+  labels:
+    app: payment-service
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+      - name: payment-api
+        image: busybox:1.36
+        command: ["sh", "-c"]
+        args:
+        - |
+          echo "[INFO] Starting Payment Service v2.4.1..."
+          echo "[INFO] Loading configuration..."
+          echo "[INFO] Validating required environment variables: [PORT, DB_USER, DB_HOST]..."
+          PORT="8080"
+          DB_USER="postgres"
+          # DB_HOST is intentionally omitted to simulate misconfiguration
+          if [ -z "$DB_HOST" ]; then
+            echo "[FATAL ERROR] Configuration check failed!" >&2
+            echo "[FATAL ERROR] Missing required environment variable 'DB_HOST'. Unable to establish connection to PostgreSQL pool." >&2
+            echo "[FATAL ERROR] Application exiting with status code 1." >&2
+            exit 1
+          fi
+          echo "[INFO] Connecting to postgres://$DB_USER@$DB_HOST:$PORT/payments..."
+          sleep 3600
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "64Mi"
+          requests:
+            cpu: "50m"
+            memory: "32Mi"

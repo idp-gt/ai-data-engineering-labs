@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-mcp-server
+  namespace: mcps
+  labels:
+    app: k8s-mcp-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-mcp-server
+  template:
+    metadata:
+      labels:
+        app: k8s-mcp-server
+    spec:
+      serviceAccountName: k8s-mcp-sa
+      containers:
+      - name: mcp-server
+        image: k8s-mcp-server:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PORT
+          value: "8000"
+        - name: MCP_TRANSPORT
+          value: "sse"
+        ports:
+        - containerPort: 8000
+          name: http-sse
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-mcp-server
+  namespace: mcps
+  labels:
+    app: k8s-mcp-server
+spec:
+  selector:
+    app: k8s-mcp-server
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http-sse

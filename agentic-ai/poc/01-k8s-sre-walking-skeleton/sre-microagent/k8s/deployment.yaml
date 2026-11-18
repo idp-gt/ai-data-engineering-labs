@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sre-microagent
+  namespace: agents
+  labels:
+    app: sre-microagent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sre-microagent
+  template:
+    metadata:
+      labels:
+        app: sre-microagent
+    spec:
+      serviceAccountName: sre-agent-sa
+      containers:
+      - name: sre-agent
+        image: sre-microagent:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: TARGET_NAMESPACE
+          value: "workers"
+        - name: MCP_SERVER_URL
+          value: "http://k8s-mcp-server.mcps.svc.cluster.local:8000/sse"
+        - name: RUN_MODE
+          value: "daemon"
+        - name: POLL_INTERVAL_SECONDS
+          value: "10"
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: sre-agent-secrets
+              key: GOOGLE_API_KEY
+              optional: true
+        resources:
+          limits:
+            cpu: "300m"
+            memory: "384Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
